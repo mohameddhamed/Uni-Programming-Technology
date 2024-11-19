@@ -10,6 +10,7 @@ import java.awt.event.KeyListener;
 public class Game extends JFrame {
     private GameGrid gridPanel;
     private Player player;
+    private JLabel livesLabel;
     private int basketCount; // Counter for collected baskets
     private JLabel basketLabel; // Label to display basket count
     private JLabel timerLabel; // Label to display timer
@@ -28,10 +29,14 @@ public class Game extends JFrame {
         // Initialize and add labels
         basketLabel = new JLabel("Baskets Collected: " + basketCount);
         timerLabel = new JLabel("Time: 0s");
+        livesLabel = new JLabel("Lives: " + player.getLives());
+
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new GridLayout(1, 2));
         infoPanel.add(basketLabel);
         infoPanel.add(timerLabel);
+        infoPanel.add(livesLabel);
+
         add(infoPanel, BorderLayout.SOUTH);
 
         setTitle("Yogi Bear Game");
@@ -45,6 +50,8 @@ public class Game extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 elapsedTime++;
                 timerLabel.setText("Time: " + elapsedTime + "s");
+                moveRangers(); // Move rangers every second
+                checkForRangerProximity();
             }
         });
         gameTimer.start(); // Start the timer when the game starts
@@ -55,15 +62,19 @@ public class Game extends JFrame {
             public void keyPressed(KeyEvent e) {
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_W: // Up
+                    case KeyEvent.VK_K: // Up
                         movePlayer(-1, 0);
                         break;
                     case KeyEvent.VK_S: // Down
+                    case KeyEvent.VK_J: // Down
                         movePlayer(1, 0);
                         break;
                     case KeyEvent.VK_A: // Left
+                    case KeyEvent.VK_H: // Left
                         movePlayer(0, -1);
                         break;
                     case KeyEvent.VK_D: // Right
+                    case KeyEvent.VK_L: // Right
                         movePlayer(0, 1);
                         break;
                 }
@@ -110,6 +121,31 @@ public class Game extends JFrame {
         }
         // Refresh the display
         repaint();
+    }
+    private void moveRangers() {
+        for (Ranger ranger : gridPanel.getRangers()) {
+            if (Math.random() < 0.5) ranger.moveHorizontal(gridPanel.getGrid()[0].length);
+            else ranger.moveVertical(gridPanel.getGrid().length);
+        }
+        repaint();
+    }
+    private void checkForRangerProximity() {
+        for (Ranger ranger : gridPanel.getRangers()) {
+            if (Math.abs(ranger.getRow() - player.getRow()) <= 1 &&
+                Math.abs(ranger.getCol() - player.getCol()) <= 1) {
+                player.loseLife();
+                livesLabel.setText("Lives: " + player.getLives());
+
+                if (player.getLives() > 0) {
+                    player.setRow(0);
+                    player.setCol(0);
+                } else {
+                    gameTimer.stop();
+                    JOptionPane.showMessageDialog(this, "Game Over! You've lost all lives.");
+                }
+                break;
+            }
+        }
     }
 
     // Check if the position (x, y) is walkable
