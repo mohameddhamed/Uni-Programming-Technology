@@ -11,32 +11,37 @@ public class Game extends JFrame {
     private GameGrid gridPanel;
     private Player player;
     private JLabel livesLabel;
-    private int basketCount; // Counter for collected baskets
+    private int collectedBasketCount; // Counter for collected baskets
     private JLabel basketLabel; // Label to display basket count
     private JLabel timerLabel; // Label to display timer
     private Timer gameTimer; // Timer to count elapsed time
     private int elapsedTime; // Elapsed time in seconds
+    private JLabel levelLabel;
+    private int level;
 
     public Game() {
         player = new Player();
-        gridPanel = new GameGrid();
-        basketCount = 0;
+        level = 1; // Start at level 1
+        collectedBasketCount = 0;
         elapsedTime = 0;
 
-        setLayout(new BorderLayout());
-        add(gridPanel, BorderLayout.CENTER);
 
         // Initialize and add labels
-        basketLabel = new JLabel("Baskets Collected: " + basketCount);
+        basketLabel = new JLabel("Baskets Collected: " + collectedBasketCount);
         timerLabel = new JLabel("Time: 0s");
         livesLabel = new JLabel("Lives: " + player.getLives());
+        levelLabel = new JLabel("Level: " + level);
+        resetGameGrid();
 
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new GridLayout(1, 2));
         infoPanel.add(basketLabel);
         infoPanel.add(timerLabel);
         infoPanel.add(livesLabel);
+        infoPanel.add(levelLabel);
 
+        setLayout(new BorderLayout());
+        add(gridPanel, BorderLayout.CENTER);
         add(infoPanel, BorderLayout.SOUTH);
 
         setTitle("Yogi Bear Game");
@@ -52,6 +57,7 @@ public class Game extends JFrame {
                 timerLabel.setText("Time: " + elapsedTime + "s");
                 moveRangers(); // Move rangers every second
                 checkForRangerProximity();
+                checkForLevelCompletion();
             }
         });
         gameTimer.start(); // Start the timer when the game starts
@@ -87,6 +93,36 @@ public class Game extends JFrame {
             public void keyTyped(KeyEvent e) {}
         });
     }
+    private void resetGameGrid() {
+        gridPanel = new GameGrid(level); // Pass the current level to the grid
+        collectedBasketCount = 0; // Reset collected basket count
+        player.setRow(0); // Reset player's position
+        player.setCol(0);
+    
+        // Update the UI
+        basketLabel.setText("Baskets Collected: " + collectedBasketCount);
+        livesLabel.setText("Lives: " + player.getLives());
+        timerLabel.setText("Time: 0s");
+        elapsedTime = 0; // Reset timer for the new level
+    
+        // Remove the old grid and add the new one
+        getContentPane().removeAll();
+        add(gridPanel, BorderLayout.CENTER);
+    
+        // Re-add info panel for the updated UI
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new GridLayout(1, 4));
+        infoPanel.add(basketLabel);
+        infoPanel.add(timerLabel);
+        infoPanel.add(livesLabel);
+        infoPanel.add(levelLabel);
+        add(infoPanel, BorderLayout.SOUTH);
+    
+        // Refresh the frame to display the new grid and elements
+        revalidate();
+        repaint();
+    }
+    
 
     @Override
     public void paint(Graphics g) {
@@ -114,8 +150,8 @@ public class Game extends JFrame {
 
             // Check if the player collected a basket
             if (gridPanel.getCell(newX, newY) == 'B') {
-                basketCount++;
-                basketLabel.setText("Baskets Collected: " + basketCount);
+                collectedBasketCount++;
+                basketLabel.setText("Baskets Collected: " + collectedBasketCount);
                 gridPanel.setCell(newX, newY, 'E'); // Remove basket from grid
             }
         }
@@ -124,11 +160,34 @@ public class Game extends JFrame {
     }
     private void moveRangers() {
         for (Ranger ranger : gridPanel.getRangers()) {
-            if (Math.random() < 0.5) ranger.moveHorizontal(gridPanel.getGrid()[0].length);
-            else ranger.moveVertical(gridPanel.getGrid().length);
+            int randomDirection = (int) (Math.random() * 4); // 0: up, 1: down, 2: left, 3: right
+            int newRow = ranger.getRow();
+            int newCol = ranger.getCol();
+    
+            switch (randomDirection) {
+                case 0: // Move up
+                    newRow = ranger.getRow() - 1;
+                    break;
+                case 1: // Move down
+                    newRow = ranger.getRow() + 1;
+                    break;
+                case 2: // Move left
+                    newCol = ranger.getCol() - 1;
+                    break;
+                case 3: // Move right
+                    newCol = ranger.getCol() + 1;
+                    break;
+            }
+    
+            // Check if the new position is walkable and update ranger's position
+            if (isWalkable(newRow, newCol)) {
+                ranger.setRow(newRow);
+                ranger.setCol(newCol);
+            }
         }
         repaint();
     }
+    
     private void checkForRangerProximity() {
         for (Ranger ranger : gridPanel.getRangers()) {
             if (Math.abs(ranger.getRow() - player.getRow()) <= 1 &&
@@ -145,6 +204,16 @@ public class Game extends JFrame {
                 }
                 break;
             }
+        }
+    }
+    private void checkForLevelCompletion() {
+        if (gridPanel.initializedBaskets() - collectedBasketCount == 0) {
+            level++;
+            JOptionPane.showMessageDialog(this, "Next Level!");
+            levelLabel.setText("Level: " + level);
+            collectedBasketCount = 0;
+            basketLabel.setText("Baskets Collected: " + collectedBasketCount);
+            resetGameGrid(); // Generate a new level
         }
     }
 

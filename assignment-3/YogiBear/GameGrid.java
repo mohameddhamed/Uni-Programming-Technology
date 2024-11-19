@@ -11,40 +11,47 @@ public class GameGrid extends JPanel {
     private final int cellSize = 50; // Size of each cell
     private char[][] grid; // Grid representation ('E': empty, 'B': basket, 'T': tree)
     private ArrayList<Ranger> rangers = new ArrayList<>(); // List of rangers
+    private int initializedBasketCount;
 
 
-    public GameGrid() {
+    public GameGrid(int level) { // Accept level as parameter
         this.grid = new char[rows][cols];
-        initializeGrid();
+        this.rangers = new ArrayList<>();
+        initializeGrid(level);
         setPreferredSize(new Dimension(cols * cellSize, rows * cellSize));
     }
 
-    private void initializeGrid() {
+    private void initializeGrid(int level) {
         Random rand = new Random();
+        initializedBasketCount = 0;
 
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < cols; col++) {
-                if (Math.random() < 0.1) {
-                    if (rand.nextBoolean()) {
-                        grid[row][col] = 'T';  // Tree
-                    } else {
-                        grid[row][col] = 'M';  // Mountain
-                    }
-                } else if (Math.random() < 0.15) {
-                    grid[row][col] = 'B'; // Basket
+                double randomValue = Math.random();
+
+                if (randomValue < 0.1 + (0.02 * level)) { // Increase obstacles with levels
+                    grid[row][col] = rand.nextBoolean() ? 'T' : 'M'; // Tree or Mountain
+                } else if (randomValue < 0.2 + (0.05 * level)) { // Increase baskets with levels
+                    grid[row][col] = 'B';
+                    initializedBasketCount++;
                 } else {
                     grid[row][col] = 'E'; // Empty
                 }
             }
         }
         grid[0][0] = 'E'; // Starting position
-        // Initialize Rangers at random positions
-        for (int i = 0; i < 3; i++) { // Add 3 rangers as an example
+
+        // Add more rangers as levels progress
+        for (int i = 0; i < 2 + level; i++) {
             int rRow = rand.nextInt(rows);
             int rCol = rand.nextInt(cols);
             rangers.add(new Ranger(rRow, rCol));
         }
     }
+    public int initializedBaskets() {
+        return initializedBasketCount;
+    }
+
 
     public char getCell(int row, int col) {
         return grid[row][col];
